@@ -48,7 +48,7 @@ Use `--core /absolute/path/to/historical-core.mjs` with the same fixture argumen
 | --- | --- |
 | Every task repeated the same Git reads | Invocation-scoped batch reads and per-base diffs preserve individual scopes and order. |
 | Failed batches left unused commands queued | A failing batch cancels sibling work before returning its original failure. |
-| Updating JSON in place exposed partial files to readers | Completed temporary JSON is published atomically; transient Windows replacement locks receive bounded retries lasting about 2.4 seconds. Persistent failures preserve the original file and clean up temporary data. |
+| Updating JSON in place exposed partial files to readers | Completed temporary JSON is published atomically; transient Windows replacement locks receive bounded retries lasting about 2.4 seconds. Persistent replacement failures preserve the original file; temporary cleanup is retried and cleanup failures are reported. |
 | Valid fields could encode to more than the readable 64 KiB limit | Reject encoded oversized JSON before publication. |
 | Removing a captured submodule could yield a pass | Raw Git file modes retain the removed submodule warning; ignore-submodule settings cannot suppress it. |
 | Multiple dashboard tabs duplicated overview work | Overlapping reads share an active audit; a later request audits again, and writes invalidate in-flight snapshots. Up to two repositories collect concurrently. |
