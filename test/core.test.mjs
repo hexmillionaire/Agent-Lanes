@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rename, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rename, rm, symlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -94,6 +94,19 @@ test('duplicate tasks are refused; notes cannot silently widen scope', async t =
   await updateTask(root, task.id, { state: 'blocked', next: 'Need credentials' });
   assert.equal((await readTask(root, task.id)).state, 'blocked');
   assert.equal((await listTasks(root)).length, 1);
+});
+
+test('trusted repository aliases work, but symlinked task storage is refused', async t => {
+  const { root } = await fixture(t);
+  const parent = await mkdtemp(path.join(os.tmpdir(), 'agent-lanes-alias-'));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  const alias = path.join(parent, 'repo');
+  await symlink(root, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  assert.equal((await readTask(alias, 'login')).id, 'login');
+  const other = path.join(parent, 'other');
+  await mkdir(other);
+  await symlink(path.join(root, '.agent-lanes'), path.join(other, '.agent-lanes'), process.platform === 'win32' ? 'junction' : 'dir');
+  await assert.rejects(readTask(other, 'login'), /real directory/);
 });
 
 test('submodule repositories fail closed', async t => {
