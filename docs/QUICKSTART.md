@@ -4,7 +4,7 @@ Requires Node 24.8+ and Git. No model API key is needed. Use a trusted Git repos
 
 ## Install
 
-Install the three published npm packages:
+The v0.3.0 GitHub archives below are available now. npm publication awaits account approval; these npm commands apply after registry publication:
 
 ```sh
 npm install -g @hexmillionaire/agent-lanes@0.3.0 @hexmillionaire/agent-desk@0.3.0 @hexmillionaire/agent-lanes-mcp@0.3.0
