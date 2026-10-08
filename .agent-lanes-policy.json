@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "lanes": {
+    "development": {
+      "allow": ["src/**", "bin/**", "test/**", "scripts/**", "docs/**", "*.md", "package.json", "package-lock.json", "action.yml", ".github/**", ".gitignore"],
+      "deny": [".agent-lanes-policy.json", "LICENSE"]
+    },
+    "docs": { "allow": ["docs/**", "*.md"], "deny": ["SECURITY.md"] }
+  }
+}
