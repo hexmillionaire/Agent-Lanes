@@ -13,9 +13,15 @@ import { startTask, readTask, checkTask, checkTasks, checkAll, classify, validat
 
 const cli = fileURLToPath(new URL('../bin/agent-lanes.mjs', import.meta.url));
 function git(root, ...args) { return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true }); }
+async function removeFixture(root, prefix) {
+  const target = path.resolve(root);
+  assert.equal(path.dirname(target), path.resolve(os.tmpdir()));
+  assert.ok(path.basename(target).startsWith(prefix) && path.basename(target).length > prefix.length, 'Cleanup must target the created fixture directory.');
+  await rm(target, { recursive: true, force: true, maxRetries: process.platform === 'win32' ? 5 : 0, retryDelay: 100 });
+}
 async function fixture(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'agent-lanes-test-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  t.after(() => removeFixture(root, 'agent-lanes-test-'));
   git(root, 'init', '-q');
   git(root, 'config', 'user.name', 'Test');
   git(root, 'config', 'user.email', 'test@example.invalid');
@@ -105,7 +111,7 @@ test('duplicate tasks are refused; notes cannot silently widen scope', async t =
 test('trusted repository aliases work, but symlinked task storage is refused', async t => {
   const { root } = await fixture(t);
   const parent = await mkdtemp(path.join(os.tmpdir(), 'agent-lanes-alias-'));
-  t.after(() => rm(parent, { recursive: true, force: true }));
+  t.after(() => removeFixture(parent, 'agent-lanes-alias-'));
   const alias = path.join(parent, 'repo');
   await symlink(root, alias, process.platform === 'win32' ? 'junction' : 'dir');
   assert.equal((await readTask(alias, 'login')).id, 'login');
