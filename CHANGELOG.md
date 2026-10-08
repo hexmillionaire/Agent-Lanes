@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- Share fresh Git reads and one diff per distinct task base across a batch; bound Git concurrency and support cancellation.
+- Publish complete task JSON atomically and reject oversized data before writing. Task creation requires filesystem hard-link support.
+- Fail closed when a captured submodule is removed, even with ignore-submodule Git settings.
+- Add reproducible benchmarks and test the minimum Node 24.8 runtime as well as current Node 24 LTS on three OSes.
+
 ## 0.2.0
 
 - Committed lane policies and PR audits read from the trusted base Git blob.
