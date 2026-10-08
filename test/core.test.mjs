@@ -33,6 +33,8 @@ test('glob semantics, deny precedence, and literal dotfiles', () => {
   assert.equal(classify('.github/workflows/ci.yml', task).verdict, 'allowed');
   assert.equal(classify('docs/app.js', task).verdict, 'outside');
   assert.equal(classify('src/deep/app.js', { allow: ['src/*.js'], deny: [] }).verdict, 'outside');
+  assert.equal(classify('.agent-lanes-policy.json', { allow: ['*.json'], deny: [] }).verdict, 'outside');
+  assert.equal(classify('.agent-lanes-policy.json', { allow: ['.agent-lanes-policy.json'], deny: [] }).verdict, 'allowed');
 });
 
 test('reject path traversal, options as refs, and unsupported patterns', async t => {
@@ -150,4 +152,13 @@ test('CLI returns distinct scope and input errors, with clean JSON output', asyn
   assert.equal(JSON.parse(result.stdout).ok, false);
   result = spawnSync(process.execPath, [cli, 'check', 'login', '--repo', root, '--allow', '**'], { encoding: 'utf8' });
   assert.equal(result.status, 2);
+});
+
+test('notes advance timestamps and a full task directory rejects a new task', async t => {
+  const { root, task } = await fixture(t);
+  const first = await updateTask(root, task.id, { state: 'working' });
+  const second = await updateTask(root, task.id, { state: 'review' });
+  assert.ok(second.updatedAt > first.updatedAt);
+  for (let i = 1; i < 200; i++) await writeFile(path.join(root, '.agent-lanes', `task-${i}.json`), JSON.stringify({ ...task, id: `task-${i}` }));
+  await assert.rejects(startTask(root, { id: 'overflow', goal: 'x', allow: ['src/**'] }), /At most 200/);
 });

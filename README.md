@@ -43,12 +43,13 @@ Add `.agent-lanes/` to your target repository's `.gitignore`. Tasks and private 
 | `start <id> --goal ... --allow ...` | Save a task and resolve its immutable base commit; default `HEAD` |
 | `note <id> --state ... --summary ... --next ...` | Record progress without changing the scope |
 | `check <id> [--json]` | Audit paths against allow/deny patterns |
+| `check-pr <lane> --base <sha> --head <sha>` | Audit a PR with the base commit policy; accepts `--json` or `--markdown` |
 | `handoff <id>` | Print a Markdown context packet; redirects are under your control |
 | `list [--json]` | List saved tasks |
 
 Every command accepts `--repo`. `start` accepts `--base <ref>`, repeatable `--allow`/`--deny`, and `--agent`. States are `planned`, `working`, `blocked`, `review`, and `done`. The state and agent label are user-supplied metadata, not observations of a running process. A task ID uses lowercase letters, numbers, hyphens, and underscores. Existing task IDs cannot be overwritten by `start`.
 
-Patterns use repository-relative `/` paths. `*` matches within a directory, `**` spans directories, and `?` matches one character. Absolute paths, traversal, braces, character classes, and negation are rejected. Deny patterns take priority over allow patterns. Node's POSIX glob matcher is used on every platform.
+Patterns use repository-relative `/` paths. `*` matches within a directory, `**` spans directories, and `?` matches one character. Match hidden paths explicitly: `*.json` does not cover `.agent-lanes-policy.json`; use `.github/**` for workflows. Absolute paths, traversal, braces, character classes, and negation are rejected. Deny patterns take priority. Node's POSIX glob matcher is used on every platform.
 
 Exit codes: `0` within scope, `1` review required, `2` invalid input or Git/file error. `handoff` exports data even when an audit needs review; use `check` as your gate. No changed files is a valid scope result, not proof that a task was completed.
 
@@ -61,6 +62,8 @@ This tool audits the final net change relative to a base commit. It does not pre
 The CLI reads Git path metadata rather than file contents, chats, credentials, or command output. Task notes and file names can still contain private information: review a handoff before sharing it. There is no network access or telemetry in the tool.
 
 ## Companion projects
+
+Start with the [connected quickstart](docs/QUICKSTART.md) to use all three tools on one task. For CI, see [the trusted-base PR scope check](docs/PR-CHECK.md) and [`action.yml`](action.yml).
 
 - [Agent Desk](https://github.com/hexmillionaire/agent-desk): local task dashboard with filters, changes, and copyable handoffs.
 - [Agent Lanes MCP](https://github.com/hexmillionaire/agent-lanes-mcp): read-only MCP access to these task reports.

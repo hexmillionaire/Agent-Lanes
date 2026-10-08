@@ -1,0 +1,27 @@
+name: Agent Lanes scope check
+description: Audit PR paths using a lane policy from the trusted base commit.
+inputs:
+  lane:
+    description: Lane ID in the base commit policy
+    required: true
+  base:
+    description: Full trusted base commit SHA
+    required: true
+  head:
+    description: Full PR head commit SHA
+    required: true
+  repository:
+    description: Checked-out repository with base and head objects available
+    default: '.'
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        LANES_ROOT: ${{ github.action_path }}
+        LANES_REPOSITORY: ${{ inputs.repository }}
+        LANES_LANE: ${{ inputs.lane }}
+        LANES_BASE: ${{ inputs.base }}
+        LANES_HEAD: ${{ inputs.head }}
+      run: |
+        node "$LANES_ROOT/bin/agent-lanes.mjs" check-pr "$LANES_LANE" --repo "$LANES_REPOSITORY" --base "$LANES_BASE" --head "$LANES_HEAD" --markdown >> "$GITHUB_STEP_SUMMARY"

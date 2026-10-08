@@ -1,14 +1,46 @@
 {
   "name": "@hexmillionaire/agent-lanes",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Portable task scopes and handoffs for Claude Code, Codex, and human contributors.",
   "type": "module",
-  "bin": { "agent-lanes": "bin/agent-lanes.mjs" },
-  "exports": "./src/core.mjs",
-  "files": ["bin", "src", "README.md", "LICENSE"],
-  "scripts": { "test": "node --test", "demo": "node scripts/demo.mjs" },
-  "engines": { "node": ">=24.8.0" },
-  "repository": { "type": "git", "url": "https://github.com/hexmillionaire/agent-lanes.git" },
+  "bin": {
+    "agent-lanes": "bin/agent-lanes.mjs"
+  },
+  "exports": {
+    ".": "./src/core.mjs",
+    "./pr": "./src/pr.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE",
+    "docs",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "action.yml"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "demo": "node scripts/demo.mjs",
+    "test:package": "node scripts/package-smoke.mjs"
+  },
+  "engines": {
+    "node": ">=24.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hexmillionaire/Agent-Lanes.git"
+  },
   "license": "MIT",
-  "keywords": ["codex", "claude-code", "git", "task-scope", "handoff"]
+  "keywords": [
+    "codex",
+    "claude-code",
+    "git",
+    "task-scope",
+    "handoff"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
