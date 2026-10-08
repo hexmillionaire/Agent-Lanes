@@ -11,12 +11,12 @@ OUTSIDE  ? "config.json"
 0 conflict(s), 0 submodule(s). Tests not verified.
 ```
 
-## Install
+## Install from npm
 
-Requires Node.js 24.8+ and Git. [Agent Lanes 0.3.0 is released on GitHub](https://github.com/hexmillionaire/Agent-Lanes/releases/tag/v0.3.0). npm publication awaits account approval; use the verified release archive below.
+Requires Node.js 24.8+ and Git. [Agent Lanes 0.3.0 is available on npm](https://www.npmjs.com/package/@hexmillionaire/agent-lanes).
 
 ```sh
-npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.3.0/hexmillionaire-agent-lanes-0.3.0.tgz
+npm install -g @hexmillionaire/agent-lanes@0.3.0
 agent-lanes --help
 ```
 
