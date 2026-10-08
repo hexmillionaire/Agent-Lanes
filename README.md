@@ -11,7 +11,18 @@ OUTSIDE  ? "config.json"
 0 conflict(s), 0 submodule(s). Tests not verified.
 ```
 
-## Quick start
+## Install from npm
+
+Requires Node.js 24.8+ and Git. [Agent Lanes 0.2.0 is available on npm](https://www.npmjs.com/package/@hexmillionaire/agent-lanes).
+
+```sh
+npm install -g @hexmillionaire/agent-lanes@0.2.0
+agent-lanes --help
+```
+
+The [connected quickstart](docs/QUICKSTART.md) walks through a task using Agent Lanes, Agent Desk, and Agent Lanes MCP. No model API key is needed.
+
+## Run from source
 
 Requires Node.js 24.8+ and Git. Clone this repository and use the CLI directly; no install or API key is needed.
 
