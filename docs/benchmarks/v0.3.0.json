@@ -1,0 +1,125 @@
+{
+  "note": "Node24.15 measurements were made before the refined working core version string was bumped to0.3.0; both phases retain their raw declared version.",
+  "samples": {
+    "baseline": {
+      "1": {
+        "version": "0.2.0",
+        "platform": "win32",
+        "node": "v24.15.0",
+        "tasks": 1,
+        "files": 200,
+        "runs": 3,
+        "bases": 1,
+        "elapsedMs": [
+          99,
+          86,
+          110
+        ],
+        "medianMs": 99
+      },
+      "20": {
+        "version": "0.2.0",
+        "platform": "win32",
+        "node": "v24.15.0",
+        "tasks": 20,
+        "files": 200,
+        "runs": 3,
+        "bases": 1,
+        "elapsedMs": [
+          1615,
+          1549,
+          1548
+        ],
+        "medianMs": 1549
+      },
+      "100": {
+        "version": "0.2.0",
+        "platform": "win32",
+        "node": "v24.15.0",
+        "tasks": 100,
+        "files": 200,
+        "runs": 3,
+        "bases": 1,
+        "elapsedMs": [
+          8221,
+          8232,
+          7819
+        ],
+        "medianMs": 8221
+      }
+    },
+    "refined": {
+      "1": {
+        "version": "0.2.0",
+        "platform": "win32",
+        "node": "v24.15.0",
+        "tasks": 1,
+        "files": 200,
+        "runs": 3,
+        "bases": 1,
+        "elapsedMs": [
+          102,
+          90,
+          91
+        ],
+        "medianMs": 91
+      },
+      "20": {
+        "version": "0.2.0",
+        "platform": "win32",
+        "node": "v24.15.0",
+        "tasks": 20,
+        "files": 200,
+        "runs": 3,
+        "bases": 1,
+        "elapsedMs": [
+          92,
+          77,
+          77
+        ],
+        "medianMs": 77
+      },
+      "100": {
+        "version": "0.2.0",
+        "platform": "win32",
+        "node": "v24.15.0",
+        "tasks": 100,
+        "files": 200,
+        "runs": 3,
+        "bases": 1,
+        "elapsedMs": [
+          117,
+          95,
+          86
+        ],
+        "medianMs": 95
+      }
+    }
+  },
+  "node24LtsConfirmation": {
+    "baseline": {
+      "node": "v24.21.0",
+      "tasks": 20,
+      "files": 200,
+      "bases": 1,
+      "elapsedMs": [
+        1562,
+        1502,
+        1512
+      ],
+      "medianMs": 1512
+    },
+    "refined": {
+      "node": "v24.21.0",
+      "tasks": 20,
+      "files": 200,
+      "bases": 1,
+      "elapsedMs": [
+        114,
+        82,
+        81
+      ],
+      "medianMs": 82
+    }
+  }
+}

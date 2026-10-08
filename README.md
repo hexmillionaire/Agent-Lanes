@@ -13,10 +13,10 @@ OUTSIDE  ? "config.json"
 
 ## Install from npm
 
-Requires Node.js 24.8+ and Git. [Agent Lanes 0.2.0 is available on npm](https://www.npmjs.com/package/@hexmillionaire/agent-lanes).
+Requires Node.js 24.8+ and Git. [Agent Lanes 0.3.0 is available on npm](https://www.npmjs.com/package/@hexmillionaire/agent-lanes).
 
 ```sh
-npm install -g @hexmillionaire/agent-lanes@0.2.0
+npm install -g @hexmillionaire/agent-lanes@0.3.0
 agent-lanes --help
 ```
 
@@ -82,3 +82,9 @@ Start with the [connected quickstart](docs/QUICKSTART.md) to use all three tools
 ## Development
 
 `npm test` runs integration tests using temporary Git repositories. `npm run demo` recreates this project's fixed `.demo/` sandbox and demonstrates an out-of-scope edit. All public code is MIT licensed. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Performance and reliability review
+
+See the [October 2026 investigation](https://github.com/hexmillionaire/Agent-Lanes/blob/main/docs/INVESTIGATION.md) for measured results, language/runtime decisions, limitations, and the next improvements. Use the latest Node 24 LTS patch; Node 24.8 is the tested minimum.
+
+Task creation requires a filesystem with hard-link support (such as NTFS, APFS, or ext4). Atomic file replacement prevents partial JSON reads; it does not merge simultaneous edits from separate processes.

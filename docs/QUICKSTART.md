@@ -7,15 +7,15 @@ Requires Node 24.8+ and Git. No model API key is needed. Use a trusted Git repos
 Install the three published npm packages:
 
 ```sh
-npm install -g @hexmillionaire/agent-lanes@0.2.0 @hexmillionaire/agent-desk@0.2.0 @hexmillionaire/agent-lanes-mcp@0.2.0
+npm install -g @hexmillionaire/agent-lanes@0.3.0 @hexmillionaire/agent-desk@0.3.0 @hexmillionaire/agent-lanes-mcp@0.3.0
 ```
 
 Package installation does not configure Claude or Codex automatically. If you prefer GitHub release archives, use:
 
 ```sh
-npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.2.0/hexmillionaire-agent-lanes-0.2.0.tgz
-npm install -g https://github.com/hexmillionaire/agent-desk/releases/download/v0.2.0/hexmillionaire-agent-desk-0.2.0.tgz
-npm install -g https://github.com/hexmillionaire/agent-lanes-mcp/releases/download/v0.2.0/hexmillionaire-agent-lanes-mcp-0.2.0.tgz
+npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.3.0/hexmillionaire-agent-lanes-0.3.0.tgz
+npm install -g https://github.com/hexmillionaire/agent-desk/releases/download/v0.3.0/hexmillionaire-agent-desk-0.3.0.tgz
+npm install -g https://github.com/hexmillionaire/agent-lanes-mcp/releases/download/v0.3.0/hexmillionaire-agent-lanes-mcp-0.3.0.tgz
 ```
 
 ## Create a task
