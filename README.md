@@ -32,7 +32,7 @@ node bin/agent-lanes.mjs check login --repo /path/to/project
 node bin/agent-lanes.mjs handoff login --repo /path/to/project
 ```
 
-On PowerShell, use a quoted Windows path such as `--repo "C:\Code\my-project"`. Glob arguments must be quoted on every shell. You can optionally run `npm install -g .` to get the `agent-lanes` command. This project is distributed through GitHub; it is not published to npm.
+On PowerShell, use a quoted Windows path such as `--repo "C:\Code\my-project"`. Glob arguments must be quoted on every shell. You can run `npm install -g .` to get the `agent-lanes` command, or install the versioned GitHub archive. See the [connected quickstart](docs/QUICKSTART.md) for release and npm installation instructions.
 
 Add `.agent-lanes/` to your target repository's `.gitignore`. Tasks and private notes live there. The CLI does not edit your Git ignore rules automatically. It excludes that directory from its own audit.
 
