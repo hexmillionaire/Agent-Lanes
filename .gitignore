@@ -1,0 +1,4 @@
+node_modules/
+.agent-lanes/
+*.tgz
+.demo/

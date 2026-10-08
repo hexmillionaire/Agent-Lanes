@@ -1,0 +1,14 @@
+{
+  "name": "@hexmillionaire/agent-lanes",
+  "version": "0.1.0",
+  "description": "Portable task scopes and handoffs for Claude Code, Codex, and human contributors.",
+  "type": "module",
+  "bin": { "agent-lanes": "bin/agent-lanes.mjs" },
+  "exports": "./src/core.mjs",
+  "files": ["bin", "src", "README.md", "LICENSE"],
+  "scripts": { "test": "node --test", "demo": "node scripts/demo.mjs" },
+  "engines": { "node": ">=24.8.0" },
+  "repository": { "type": "git", "url": "https://github.com/hexmillionaire/agent-lanes.git" },
+  "license": "MIT",
+  "keywords": ["codex", "claude-code", "git", "task-scope", "handoff"]
+}
