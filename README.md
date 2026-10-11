@@ -13,11 +13,17 @@ OUTSIDE  ? "config.json"
 
 ## Install the current release
 
-Requires Node.js 24.8+ and Git. Version 0.4.0 is provided as an independently installable GitHub release archive.
+Requires Node.js 24.8+ and Git. [Version 0.4.0 is on npm](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), published October 11, 2026.
+
+```sh
+npm install -g @hexmillionaire/agent-lanes@0.4.0
+agent-lanes --help
+```
+
+For a single command, use `npx --yes @hexmillionaire/agent-lanes@0.4.0 --help`. The versioned GitHub release archive remains an alternative:
 
 ```sh
 npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.4.0/hexmillionaire-agent-lanes-0.4.0.tgz
-agent-lanes --help
 ```
 
 The [connected quickstart](docs/QUICKSTART.md) walks through a task using Agent Lanes, Agent Desk, and Agent Lanes MCP. No model API key is needed.
@@ -43,7 +49,7 @@ node bin/agent-lanes.mjs check login --repo /path/to/project
 node bin/agent-lanes.mjs handoff login --repo /path/to/project
 ```
 
-On PowerShell, use a quoted Windows path such as `--repo "C:\Code\my-project"`. Glob arguments must be quoted on every shell. You can run `npm install -g .` to get the `agent-lanes` command, or install the versioned GitHub archive. See the [connected quickstart](docs/QUICKSTART.md) for release and npm installation instructions.
+On PowerShell, use a quoted Windows path such as `--repo "C:\Code\my-project"`. Glob arguments must be quoted on every shell. You can run `npm install -g .` to get the `agent-lanes` command from your checkout. See the [connected quickstart](docs/QUICKSTART.md) for npm and release archive installation instructions.
 
 Add `.agent-lanes/` to your target repository's `.gitignore`. Tasks and private notes live there. The CLI does not edit your Git ignore rules automatically. It excludes that directory from its own audit.
 
@@ -87,7 +93,7 @@ Start with the [connected quickstart](docs/QUICKSTART.md) to use all three tools
 
 See the [October 2026 investigation](https://github.com/hexmillionaire/Agent-Lanes/blob/main/docs/INVESTIGATION.md) for measured results, language/runtime decisions, limitations, and the next improvements. Use the latest Node 24 LTS patch; Node 24.8 is the tested minimum.
 
-Task creation requires a filesystem with hard-link support (such as NTFS, APFS, or ext4). Atomic file replacement prevents partial JSON reads; it does not merge simultaneous edits from separate processes.
+Task creation and writer coordination require a filesystem with hard-link support (such as NTFS, APFS, or ext4). Atomic file replacement prevents partial JSON reads. In 0.4.0, cooperating writers serialize mutations and merge updates against the latest saved fields; use revision checks to reject stale edits. Manual file changes and older writers do not participate in this coordination.
 
 ## Coordinated notes and scope templates
 

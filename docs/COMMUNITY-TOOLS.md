@@ -23,7 +23,7 @@ Existing [mcp-contracts](https://github.com/mcp-contracts/mcp-contracts), [Cisco
 
 ## Choices and next contributions
 
-Keep JavaScript ESM on Node 24 LTS. Our previous [0.3 investigation](INVESTIGATION.md) measured substantial gains from sharing Git reads; a language rewrite has no demonstrated benefit for these small I/O-oriented tools. Keep zero runtime dependencies for core, Desk and the new offline utilities. MCP retains pinned official SDK/Zod runtime dependencies; its validator and Inspector remain development-only.
+Keep JavaScript ESM on Node 24 LTS. Our previous [0.3 investigation](INVESTIGATION.md) measured substantial gains from sharing Git reads; a language rewrite has no demonstrated benefit for these small I/O-oriented tools. Keep zero runtime dependencies for core, Desk and the new offline utilities. MCP retains pinned official SDK/Zod runtime dependencies. The strict Ajv2020 test oracle and Inspector are development tools; the SDK also includes Ajv transitively at runtime.
 
 Codex already supports durable project context and verification workflows, described in its [long-running task guide](https://developers.openai.com/blog/run-long-horizon-tasks-with-codex). Claude Code also has [native worktrees](https://code.claude.com/docs/en/worktrees). Projects such as [Claude Squad](https://github.com/smtg-ai/claude-squad) and [Forklane](https://github.com/pointvis/forklane) cover orchestration and broader sessions. We chose authored metadata and inspectable interfaces rather than another agent launcher.
 
