@@ -1,23 +1,25 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
-import { repoRoot, startTask, updateTask, readTask, listTasks, checkTask, handoff, VERSION } from '../src/core.mjs';
+import { repoRoot, startTask, updateTask, readTask, listTasks, readTemplates, writerLockStatus, checkTask, handoff, VERSION } from '../src/core.mjs';
 import { checkPullRequest, prSummary } from '../src/pr.mjs';
 
-const usage = `Agent Lanes ${VERSION} — portable task scope checks\n\nUsage:\n  agent-lanes start <id> --goal "Fix login" --allow "src/**" --allow "test/**"\n  agent-lanes note <id> --state working --agent codex --next "Add regression test"\n  agent-lanes check <id> [--json]\n  agent-lanes check-pr <lane> --base <full-sha> --head <full-sha> [--json|--markdown]\n  agent-lanes handoff <id>\n  agent-lanes list [--json]\n\nOptions: --repo <path>, --base <ref> (start), --deny <glob> (repeatable)\nPR policy: .agent-lanes-policy.json from the trusted base commit.\nExit codes: 0 success; 1 scope violation/conflict/submodule; 2 invalid input/error.\nScope audits read Git metadata; they do not run tests or block edits.\n`;
+const usage = `Agent Lanes ${VERSION} — portable task scope checks\n\nUsage:\n  agent-lanes start <id> --goal "Fix login" --allow "src/**" --allow "test/**"\n  agent-lanes start <id> --goal "Fix login" --template <template-id>\n  agent-lanes note <id> --state working --agent codex --next "Add regression test" [--if-updated-at <timestamp>]\n  agent-lanes check <id> [--json]\n  agent-lanes check-pr <lane> --base <full-sha> --head <full-sha> [--json|--markdown]\n  agent-lanes handoff <id>\n  agent-lanes list [--json]\n  agent-lanes templates [--json]\n  agent-lanes lock-status [--json]\n\nOptions: --repo <path>, --base <ref> (start), --deny <glob> (repeatable)\nPR policy: .agent-lanes-policy.json from the trusted base commit.\nExit codes: 0 success; 1 scope violation/conflict/submodule; 2 invalid input/error.\nScope audits read Git metadata; they do not run tests or block edits.\n`;
 
 try {
   const { values, positionals } = parseArgs({ allowPositionals: true, strict: true, options: {
     repo: { type: 'string' }, goal: { type: 'string' }, base: { type: 'string' }, agent: { type: 'string' },
     allow: { type: 'string', multiple: true }, deny: { type: 'string', multiple: true }, state: { type: 'string' },
+    'if-updated-at': { type: 'string' },
+    template: { type: 'string' },
     summary: { type: 'string' }, next: { type: 'string' }, head: { type: 'string' }, markdown: { type: 'boolean' }, json: { type: 'boolean' }, help: { type: 'boolean' }, version: { type: 'boolean' },
   } });
   if (values.version) console.log(VERSION);
   else if (values.help || !positionals.length) console.log(usage);
   else {
     const [command, id] = positionals;
-    if (positionals.length > (command === 'list' ? 1 : 2)) throw new Error('Too many positional arguments.');
-    if (!['start', 'note', 'check', 'check-pr', 'handoff', 'list'].includes(command)) throw new Error(`Unknown command: ${command}`);
-    const accepted = { start: ['repo', 'goal', 'base', 'agent', 'allow', 'deny', 'json'], note: ['repo', 'state', 'agent', 'summary', 'next', 'json'], check: ['repo', 'json'], 'check-pr': ['repo', 'base', 'head', 'json', 'markdown'], handoff: ['repo'], list: ['repo', 'json'] }[command];
+    if (positionals.length > (['list', 'templates', 'lock-status'].includes(command) ? 1 : 2)) throw new Error('Too many positional arguments.');
+    if (!['start', 'note', 'check', 'check-pr', 'handoff', 'list', 'templates', 'lock-status'].includes(command)) throw new Error(`Unknown command: ${command}`);
+    const accepted = { start: ['repo', 'goal', 'base', 'agent', 'allow', 'deny', 'template', 'json'], note: ['repo', 'state', 'agent', 'summary', 'next', 'json', 'if-updated-at'], check: ['repo', 'json'], 'check-pr': ['repo', 'base', 'head', 'json', 'markdown'], handoff: ['repo'], list: ['repo', 'json'], templates: ['repo', 'json'], 'lock-status': ['repo', 'json'] }[command];
     for (const key of Object.keys(values)) if (!accepted.includes(key)) throw new Error(`--${key} is not valid for ${command}.`);
     const root = await repoRoot(values.repo);
     if (command === 'check-pr') {
@@ -26,13 +28,26 @@ try {
       console.log(values.json ? JSON.stringify(report, null, 2) : prSummary(report));
       if (!report.ok) process.exitCode = 1;
     } else if (command === 'start') {
-      const task = await startTask(root, { id, goal: values.goal, allow: values.allow, deny: values.deny, agent: values.agent, base: values.base });
+      let allow = values.allow; let deny = values.deny;
+      if (values.template !== undefined) {
+        if (allow || deny) throw new Error('Use --template without --allow or --deny.');
+        const template = (await readTemplates(root)).templates.find(item => item.id === values.template);
+        if (!template) throw new Error('Unknown template. Use agent-lanes templates to list available IDs.');
+        ({ allow, deny } = template);
+      }
+      const task = await startTask(root, { id, goal: values.goal, allow, deny, agent: values.agent, base: values.base });
       console.log(values.json ? JSON.stringify(task, null, 2) : `Started ${task.id} at ${task.base.slice(0, 12)}. Add .agent-lanes/ to your .gitignore.`);
     } else if (command === 'note') {
       const updates = Object.fromEntries(['state', 'agent', 'summary', 'next'].filter(key => key in values).map(key => [key, values[key]]));
       if (!Object.keys(updates).length) throw new Error('Provide at least one note field.');
-      const task = await updateTask(root, id, updates);
+      const task = await updateTask(root, id, updates, { expectedUpdatedAt: values['if-updated-at'] });
       console.log(values.json ? JSON.stringify(task, null, 2) : `Updated ${task.id}: ${task.state}.`);
+    } else if (command === 'templates') {
+      const document = await readTemplates(root);
+      console.log(values.json ? JSON.stringify(document, null, 2) : document.templates.map(template => `${template.id}\t${template.name}\t${template.description}`).join('\n') || 'No templates. Add .agent-lanes-templates.json to the repository.');
+    } else if (command === 'lock-status') {
+      const status = await writerLockStatus(root);
+      console.log(values.json ? JSON.stringify(status, null, 2) : status.locked ? `Writer lock present: ${status.owner ? `PID ${status.owner.pid} on ${status.owner.hostname}; token ${status.owner.token}` : 'owner metadata unavailable'}. Stop all writers before manually removing .agent-lanes/.write.lock after a crash.` : 'No writer lock present.');
     } else if (command === 'list') {
       const tasks = await listTasks(root);
       console.log(values.json ? JSON.stringify(tasks, null, 2) : tasks.map(task => `${task.id}\t${task.state}\t${task.goal.replaceAll('\n', ' ')}`).join('\n') || 'No tasks. Use agent-lanes start.');

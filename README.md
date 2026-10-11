@@ -11,12 +11,12 @@ OUTSIDE  ? "config.json"
 0 conflict(s), 0 submodule(s). Tests not verified.
 ```
 
-## Install from npm
+## Install the current release
 
-Requires Node.js 24.8+ and Git. [Agent Lanes 0.3.0 is available on npm](https://www.npmjs.com/package/@hexmillionaire/agent-lanes).
+Requires Node.js 24.8+ and Git. Version 0.4.0 is provided as an independently installable GitHub release archive.
 
 ```sh
-npm install -g @hexmillionaire/agent-lanes@0.3.0
+npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.4.0/hexmillionaire-agent-lanes-0.4.0.tgz
 agent-lanes --help
 ```
 
@@ -88,3 +88,9 @@ Start with the [connected quickstart](docs/QUICKSTART.md) to use all three tools
 See the [October 2026 investigation](https://github.com/hexmillionaire/Agent-Lanes/blob/main/docs/INVESTIGATION.md) for measured results, language/runtime decisions, limitations, and the next improvements. Use the latest Node 24 LTS patch; Node 24.8 is the tested minimum.
 
 Task creation requires a filesystem with hard-link support (such as NTFS, APFS, or ext4). Atomic file replacement prevents partial JSON reads; it does not merge simultaneous edits from separate processes.
+
+## Coordinated notes and scope templates
+
+Version 0.4.0 adds revision-checked writes across processes, bounded writer coordination, read-only lock diagnostics, and strictly data-only reusable scope templates. See [coordination and templates](docs/COORDINATION.md). Upgrade all writers together; 0.3 clients and manual edits do not participate in the protocol. A crashed lock needs explicit recovery after writers stop.
+
+See the [dated community-tools investigation](docs/COMMUNITY-TOOLS.md) for evidence, alternatives and focused contribution opportunities. Try [Repo Fixtures](https://github.com/hexmillionaire/repo-fixtures) for fictional Git reproductions and [MCP Surface](https://github.com/hexmillionaire/mcp-surface) for offline interface checks.

@@ -1,6 +1,6 @@
 {
   "name": "@hexmillionaire/agent-lanes",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Portable task scopes and handoffs for Claude Code, Codex, and human contributors.",
   "type": "module",
   "bin": {
