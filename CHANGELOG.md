@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Coordinate CLI/server mutations across processes and enforce revision checks inside the writer lock.
+- Preserve independent note fields, enforce the 200-task cap and provide lock-status diagnostics with explicit crash recovery.
+- Read strictly data-only scope templates and create tasks with --template.
+- Retain batched Git audits and the v1 task format.
+
+
 ## 0.3.0
 
 - Share fresh Git reads and one diff per distinct task base across a batch; bound Git concurrency and support cancellation.

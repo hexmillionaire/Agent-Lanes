@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rename, rm, symlink, readdir } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rename, rm, symlink, readdir, unlink } from 'node:fs/promises';
 import fsPromises from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync, spawn } from 'node:child_process';
 import childProcess from 'node:child_process';
 import { promisify } from 'node:util';
 import { syncBuiltinESMExports } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { startTask, readTask, checkTask, checkTasks, checkAll, classify, validateId, validatePattern, updateTask, handoff, listTasks, git as executeGit } from '../src/core.mjs';
+import { startTask, readTask, checkTask, checkTasks, checkAll, classify, validateId, validatePattern, updateTask, writerLockStatus, handoff, listTasks, git as executeGit } from '../src/core.mjs';
 
 const cli = fileURLToPath(new URL('../bin/agent-lanes.mjs', import.meta.url));
 function git(root, ...args) { return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true }); }
@@ -34,6 +34,196 @@ async function fixture(t) {
   const task = await startTask(root, { id: 'login', goal: 'Fix login', allow: ['src/**'], deny: ['src/secret*'], agent: 'codex' });
   return { root, task };
 }
+
+function writerProcess(root, operation) {
+  // Independent Node processes exercise filesystem coordination, rather than an
+  // in-process queue. The publication gate gives the second writer a stale-read
+  // opportunity in the old implementation while holding a real lock in the new.
+  const script = `
+    import fs from 'node:fs/promises';
+    import { syncBuiltinESMExports } from 'node:module';
+    const input = JSON.parse(process.argv[1]);
+    const core = await import(input.core);
+    const wait = type => new Promise(resolve => process.on('message', function listener(message) {
+      if (message.type === type) { process.off('message', listener); resolve(); }
+    }));
+    if (input.gate) {
+      const original = fs.rename;
+      fs.rename = async (...args) => {
+        process.send({ type: 'held' });
+        await wait('release');
+        return original(...args);
+      };
+      syncBuiltinESMExports();
+    }
+    const go = wait('go');
+    process.send({ type: 'ready' });
+    await go;
+    let timer;
+    const controller = new AbortController();
+    if (input.cancelAfter) timer = setTimeout(() => controller.abort(new Error('Cancel waiting writer')), input.cancelAfter);
+    let result;
+    try {
+      const task = input.start
+        ? await core.startTask(input.root, input.start, { signal: controller.signal })
+        : await core.updateTask(input.root, 'login', input.updates, { expectedUpdatedAt: input.expectedUpdatedAt, signal: controller.signal });
+      result = { type: 'result', ok: true, task };
+    } catch (error) {
+      result = { type: 'result', ok: false, error: { code: error.code, message: error.message, currentTask: error.currentTask } };
+    } finally { clearTimeout(timer); }
+    process.send(result, () => process.disconnect());
+  `;
+  const child = spawn(process.execPath, ['--input-type=module', '-e', script, JSON.stringify({ core: new URL('../src/core.mjs', import.meta.url).href, root, ...operation })], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe', 'ipc'] });
+  const seen = new Map();
+  const listeners = new Map();
+  let stderr = '';
+  child.stderr.on('data', chunk => { stderr += chunk; });
+  child.on('message', message => { seen.set(message.type, message); listeners.get(message.type)?.(message); });
+  const closed = new Promise(resolve => child.once('close', (code, signal) => resolve({ code, signal })));
+  const result = closed.then(({ code, signal }) => {
+    if (!seen.has('result')) throw new Error(`Writer exited without a result (${code ?? signal}): ${stderr}`);
+    return seen.get('result');
+  });
+  result.catch(() => {});
+  return {
+    child, result,
+    wait: type => seen.has(type) ? Promise.resolve(seen.get(type)) : Promise.race([new Promise(resolve => listeners.set(type, resolve)), closed.then(() => { throw new Error(`Writer exited before ${type}: ${stderr}`); })]),
+    send: type => child.send({ type }),
+    stop: async () => { if (child.exitCode === null && child.signalCode === null) child.kill(); await closed; },
+  };
+}
+
+test('separate writers retain unrelated fields and advance revisions under publication contention', { timeout: 15000 }, async t => {
+  const { root, task } = await fixture(t);
+  const first = writerProcess(root, { updates: { summary: 'First process summary' }, gate: true });
+  const second = writerProcess(root, { updates: { next: 'Second process next step' } });
+  try {
+    await Promise.all([first.wait('ready'), second.wait('ready')]);
+    first.send('go'); await first.wait('held');
+    second.send('go');
+    // Give the independent writer time to enter its operation while the first
+    // is blocked immediately before publishing. It must wait for that owner.
+    await new Promise(resolve => setTimeout(resolve, 100));
+    first.send('release');
+    const [a, b] = await Promise.all([first.result, second.result]);
+    assert.ok(a.ok && b.ok, JSON.stringify([a, b]));
+    const current = await readTask(root, task.id);
+    assert.equal(current.summary, 'First process summary');
+    assert.equal(current.next, 'Second process next step');
+    assert.ok(b.task.updatedAt > a.task.updatedAt && a.task.updatedAt > task.updatedAt);
+    assert.deepEqual(await writerLockStatus(root), { locked: false, owner: null });
+  } finally { await Promise.all([first.stop(), second.stop()]); }
+});
+
+test('separate revision-checked writers have one winner and a typed conflict containing the current task', { timeout: 15000 }, async t => {
+  const { root, task } = await fixture(t);
+  const writers = [writerProcess(root, { updates: { summary: 'Writer A' }, expectedUpdatedAt: task.updatedAt }), writerProcess(root, { updates: { summary: 'Writer B' }, expectedUpdatedAt: task.updatedAt })];
+  try {
+    await Promise.all(writers.map(writer => writer.wait('ready')));
+    writers.forEach(writer => writer.send('go'));
+    const results = await Promise.all(writers.map(writer => writer.result));
+    assert.equal(results.filter(result => result.ok).length, 1);
+    const conflict = results.find(result => !result.ok);
+    assert.equal(conflict.error.code, 'TASK_CONFLICT');
+    assert.deepEqual(conflict.error.currentTask, await readTask(root, 'login'));
+    assert.equal(conflict.error.currentTask.version, 1);
+  } finally { await Promise.all(writers.map(writer => writer.stop())); }
+});
+
+test('concurrent task creators enforce the shared 200-task capacity', { timeout: 15000 }, async t => {
+  const { root, task } = await fixture(t);
+  for (let i = 1; i < 199; i++) await writeFile(path.join(root, '.agent-lanes', `task-${i}.json`), JSON.stringify({ ...task, id: `task-${i}` }));
+  const writers = Array.from({ length: 4 }, (_, index) => writerProcess(root, { start: { id: `last-${index}`, goal: 'Last available task', allow: ['src/**'] } }));
+  try {
+    await Promise.all(writers.map(writer => writer.wait('ready')));
+    writers.forEach(writer => writer.send('go'));
+    const results = await Promise.all(writers.map(writer => writer.result));
+    assert.equal(results.filter(result => result.ok).length, 1, JSON.stringify(results));
+    assert.ok(results.filter(result => !result.ok).every(result => /At most 200/.test(result.error.message)));
+    assert.equal((await listTasks(root)).length, 200);
+  } finally { await Promise.all(writers.map(writer => writer.stop())); }
+});
+
+test('aborted cross-process writer waits leave the owner intact and allow subsequent updates', { timeout: 15000 }, async t => {
+  const { root } = await fixture(t);
+  const holder = writerProcess(root, { updates: { summary: 'Held publication' }, gate: true });
+  const waiter = writerProcess(root, { updates: { next: 'Must not publish' }, cancelAfter: 100 });
+  try {
+    await Promise.all([holder.wait('ready'), waiter.wait('ready')]);
+    holder.send('go'); await holder.wait('held');
+    const owner = await writerLockStatus(root);
+    assert.equal(owner.owner.pid, holder.child.pid);
+    waiter.send('go');
+    const cancelled = await waiter.result;
+    assert.equal(cancelled.ok, false);
+    assert.equal(cancelled.error.message, 'Cancel waiting writer');
+    assert.deepEqual(await writerLockStatus(root), owner);
+    holder.send('release'); assert.equal((await holder.result).ok, true);
+    const current = await updateTask(root, 'login', { next: 'Saved after cancelled wait' });
+    assert.equal(current.summary, 'Held publication');
+    assert.equal(current.next, 'Saved after cancelled wait');
+    assert.deepEqual((await readdir(path.join(root, '.agent-lanes'))).sort(), ['login.json']);
+  } finally { await Promise.all([holder.stop(), waiter.stop()]); }
+});
+
+test('killed writer locks fail closed until all writers stop and the exact orphan lock is removed', { timeout: 15000 }, async t => {
+  const { root, task } = await fixture(t);
+  const holder = writerProcess(root, { updates: { summary: 'Must not publish before crash' }, gate: true });
+  try {
+    await holder.wait('ready'); holder.send('go'); await holder.wait('held');
+    const before = await writerLockStatus(root);
+    await holder.stop();
+    const status = await writerLockStatus(root);
+    assert.deepEqual(status, before);
+    await assert.rejects(updateTask(root, 'login', { summary: 'Must not steal orphan lock' }), error => error.code === 'TASK_LOCKED' && error.owner.token === before.owner.token && /stop all/i.test(error.message));
+    assert.deepEqual(await readTask(root, 'login'), task);
+    assert.deepEqual(await writerLockStatus(root), before);
+    // This controlled fixture has no running writers. Recovery removes only the
+    // verified lock path inside its own task directory, never the task JSON.
+    const lock = path.resolve(root, '.agent-lanes', '.write.lock');
+    assert.equal(path.dirname(lock), path.resolve(root, '.agent-lanes'));
+    await unlink(lock);
+    assert.equal((await updateTask(root, 'login', { summary: 'Saved after explicit recovery' })).summary, 'Saved after explicit recovery');
+  } finally { await holder.stop(); }
+});
+
+test('CLI exposes revision-checked notes and read-only lock status', async t => {
+  const { root, task } = await fixture(t);
+  let result = spawnSync(process.execPath, [cli, 'note', 'login', '--repo', root, '--summary', 'Saved once', '--if-updated-at', task.updatedAt, '--json'], { encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  const current = JSON.parse(result.stdout);
+  result = spawnSync(process.execPath, [cli, 'note', 'login', '--repo', root, '--summary', 'Stale change', '--if-updated-at', task.updatedAt], { encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /Task changed/);
+  assert.deepEqual(await readTask(root, 'login'), current);
+  result = spawnSync(process.execPath, [cli, 'lock-status', '--repo', root, '--json'], { encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), { locked: false, owner: null });
+});
+
+test('CLI lists data-only templates and copies their scopes into new tasks', async t => {
+  const { root } = await fixture(t);
+  await writeFile(path.join(root, '.agent-lanes-templates.json'), JSON.stringify({ version: 1, templates: [{ id: 'frontend', name: 'Frontend changes', allow: ['src/**'], deny: ['src/private/**'] }] }));
+  let result = spawnSync(process.execPath, [cli, 'templates', '--repo', root, '--json'], { encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  const template = JSON.parse(result.stdout).templates[0];
+  assert.equal(template.id, 'frontend');
+  result = spawnSync(process.execPath, [cli, 'start', 'ui', '--repo', root, '--goal', 'Fix UI', '--template', 'frontend', '--json'], { encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  const task = JSON.parse(result.stdout);
+  assert.deepEqual(task.allow, template.allow);
+  assert.deepEqual(task.deny, template.deny);
+  assert.equal(task.version, 1);
+  for (const options of [['--allow', '**'], ['--deny', 'src/**']]) {
+    result = spawnSync(process.execPath, [cli, 'start', 'ambiguous', '--repo', root, '--goal', 'x', '--template', 'frontend', ...options], { encoding: 'utf8', windowsHide: true });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /without --allow or --deny/);
+  }
+  result = spawnSync(process.execPath, [cli, 'start', 'unknown', '--repo', root, '--goal', 'x', '--template', 'missing'], { encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /Unknown template/);
+  assert.equal((await listTasks(root)).length, 2);
+});
 
 test('glob semantics, deny precedence, and literal dotfiles', () => {
   const task = { allow: ['src/**', '.github/**'], deny: ['src/private/**'] };
