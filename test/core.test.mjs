@@ -250,6 +250,13 @@ test('deny patterns cover hidden files and directories that an explicit allow na
   assert.equal(classify('src/.env', { allow: ['src/**'], deny: [] }).verdict, 'outside');
 });
 
+test('handoff keeps carriage-return text inside its quote block', () => {
+  const task = { version: 1, id: 'cr', goal: 'Fix\r## Injected heading\r\nnext', allow: ['src/**'], deny: [], agent: 'a', base: 'a'.repeat(40), state: 'working', summary: 'one\rtwo', next: '', createdAt: 'x', updatedAt: 'x' };
+  const packet = handoff({ task, branch: 'main', head: 'b'.repeat(40), changes: [], conflicts: [], submodules: [], ok: true });
+  assert.ok(!packet.includes('\r'));
+  assert.match(packet, /^> ## Injected heading$/m);
+  assert.match(packet, /^> two$/m);
+});
 
 test('reject path traversal, options as refs, and unsupported patterns', async t => {
   for (const id of ['../secret', 'UPPER', '', '-flag', 'a/b']) assert.throws(() => validateId(id));

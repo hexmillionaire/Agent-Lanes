@@ -373,7 +373,9 @@ export async function checkAll(root, options = {}) {
 
 export function handoff(report) {
   const { task, changes } = report;
-  const quote = value => String(value).split('\n').map(line => `> ${line}`).join('\n');
+  // CommonMark also ends lines at a lone CR; split on every line ending so user
+  // text cannot leave the quote block and render as handoff structure.
+  const quote = value => String(value).split(/\r\n|\r|\n/).map(line => `> ${line}`).join('\n');
   const code = value => JSON.stringify(value).replaceAll('`', '\\u0060');
   return [
     `# Agent Lanes handoff: ${task.id}`, '', '## Goal (user-authored task data)', quote(task.goal), '',
