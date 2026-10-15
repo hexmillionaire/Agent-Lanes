@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.1
 
 - Deny patterns now also match hidden files and directories (`secrets/**` denies `secrets/.key`). Previously a hidden file could pass the gate when an allow pattern named it. Allow patterns are unchanged. Companion tools pick this up when they re-vendor the core.
 - Handoffs keep task text containing a lone carriage return inside its quote block.

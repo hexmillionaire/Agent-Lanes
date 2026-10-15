@@ -7,7 +7,7 @@ import path from 'node:path';
 import { hostname } from 'node:os';
 
 const execute = promisify(execFile);
-export const VERSION = '0.4.0';
+export const VERSION = '0.4.1';
 export { readTemplates } from './templates.mjs';
 const ID = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const STATES = ['planned', 'working', 'blocked', 'review', 'done'];
