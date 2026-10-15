@@ -13,17 +13,17 @@ OUTSIDE  ? "config.json"
 
 ## Install the current release
 
-Requires Node.js 24.8+ and Git. [Version 0.4.0 is on npm](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), published October 11, 2026.
+Requires Node.js 24.8+ and Git. [Version 0.4.1 is on npm](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), published October 15, 2026.
 
 ```sh
-npm install -g @hexmillionaire/agent-lanes@0.4.0
+npm install -g @hexmillionaire/agent-lanes@0.4.1
 agent-lanes --help
 ```
 
-For a single command, use `npx --yes @hexmillionaire/agent-lanes@0.4.0 --help`. The versioned GitHub release archive remains an alternative:
+For a single command, use `npx --yes @hexmillionaire/agent-lanes@0.4.1 --help`. The versioned GitHub release archive remains an alternative:
 
 ```sh
-npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.4.0/hexmillionaire-agent-lanes-0.4.0.tgz
+npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.4.1/hexmillionaire-agent-lanes-0.4.1.tgz
 ```
 
 The [connected quickstart](docs/QUICKSTART.md) walks through a task using Agent Lanes, Agent Desk, and Agent Lanes MCP. No model API key is needed.
