@@ -66,7 +66,7 @@ Add `.agent-lanes/` to your target repository's `.gitignore`. Tasks and private 
 
 Every command accepts `--repo`. `start` accepts `--base <ref>`, repeatable `--allow`/`--deny`, and `--agent`. States are `planned`, `working`, `blocked`, `review`, and `done`. The state and agent label are user-supplied metadata, not observations of a running process. A task ID uses lowercase letters, numbers, hyphens, and underscores. Existing task IDs cannot be overwritten by `start`.
 
-Patterns use repository-relative `/` paths. `*` matches within a directory, `**` spans directories, and `?` matches one character. Match hidden paths explicitly: `*.json` does not cover `.agent-lanes-policy.json`; use `.github/**` for workflows. Absolute paths, traversal, braces, character classes, and negation are rejected. Deny patterns take priority. Node's POSIX glob matcher is used on every platform.
+Patterns use repository-relative `/` paths. `*` matches within a directory, `**` spans directories, and `?` matches one character. Match hidden paths explicitly: `*.json` does not cover `.agent-lanes-policy.json`; use `.github/**` for workflows. Deny patterns fail closed and also cover hidden names: `secrets/**` denies `secrets/.key` even when an allow pattern names it. Absolute paths, traversal, braces, character classes, and negation are rejected. Deny patterns take priority. Node's POSIX glob matcher is used on every platform.
 
 Exit codes: `0` within scope, `1` review required, `2` invalid input or Git/file error. `handoff` exports data even when an audit needs review; use `check` as your gate. No changed files is a valid scope result, not proof that a task was completed.
 

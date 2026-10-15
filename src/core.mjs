@@ -285,9 +285,15 @@ export async function updateTask(root, id, updates, { expectedUpdatedAt, signal 
   }, { signal });
 }
 
+// Node's matcher never lets *, ** or ? match a leading dot, so `secrets/**` alone
+// misses `secrets/.key`. Deny patterns must fail closed: also compare with every
+// hidden segment prefixed by \x01, a byte validated patterns cannot contain, so
+// wildcards can cover hidden names while literal dot segments still line up.
+const exposeHidden = value => value.split('/').map(segment => segment.startsWith('.') ? `\x01${segment}` : segment).join('/');
+
 export function classify(file, task) {
   const matches = pattern => path.posix.matchesGlob(file, pattern);
-  const denied = task.deny.find(matches);
+  const denied = task.deny.find(pattern => matches(pattern) || path.posix.matchesGlob(exposeHidden(file), exposeHidden(pattern)));
   if (denied) return { verdict: 'denied', pattern: denied };
   const allowed = task.allow.find(matches);
   return allowed ? { verdict: 'allowed', pattern: allowed } : { verdict: 'outside', pattern: null };
