@@ -237,6 +237,27 @@ test('glob semantics, deny precedence, and literal dotfiles', () => {
   assert.equal(classify('.agent-lanes-policy.json', { allow: ['.agent-lanes-policy.json'], deny: [] }).verdict, 'allowed');
 });
 
+test('deny patterns cover hidden files and directories that an explicit allow names', () => {
+  const task = { allow: ['**/.key', '**/.env', 'src/**', 'src/.config/**', '.github/**'], deny: ['secrets/**', 'src/*.env', '.github/**/.*'] };
+  assert.equal(classify('secrets/.key', task).verdict, 'denied');
+  assert.equal(classify('secrets/deep/.env', task).verdict, 'denied');
+  assert.equal(classify('src/.env', task).verdict, 'denied');
+  assert.equal(classify('.github/workflows/.hidden', task).verdict, 'denied');
+  assert.equal(classify('.github/workflows/ci.yml', task).verdict, 'allowed');
+  assert.equal(classify('src/.config/app.json', task).verdict, 'allowed');
+  assert.equal(classify('x.env', { allow: ['*'], deny: ['.env'] }).verdict, 'allowed');
+  // Allow patterns stay strict: hidden names still need an explicit allow.
+  assert.equal(classify('src/.env', { allow: ['src/**'], deny: [] }).verdict, 'outside');
+});
+
+test('handoff keeps carriage-return text inside its quote block', () => {
+  const task = { version: 1, id: 'cr', goal: 'Fix\r## Injected heading\r\nnext', allow: ['src/**'], deny: [], agent: 'a', base: 'a'.repeat(40), state: 'working', summary: 'one\rtwo', next: '', createdAt: 'x', updatedAt: 'x' };
+  const packet = handoff({ task, branch: 'main', head: 'b'.repeat(40), changes: [], conflicts: [], submodules: [], ok: true });
+  assert.ok(!packet.includes('\r'));
+  assert.match(packet, /^> ## Injected heading$/m);
+  assert.match(packet, /^> two$/m);
+});
+
 test('reject path traversal, options as refs, and unsupported patterns', async t => {
   for (const id of ['../secret', 'UPPER', '', '-flag', 'a/b']) assert.throws(() => validateId(id));
   for (const glob of ['../**', '/tmp/**', 'C:/data/**', '**\\x', '!src/**', 'src/{a,b}', 'src/[ab]']) assert.throws(() => validatePattern(glob));

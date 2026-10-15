@@ -1,5 +1,8 @@
 name: Agent Lanes scope check
 description: Audit PR paths using a lane policy from the trusted base commit.
+branding:
+  icon: git-pull-request
+  color: green
 inputs:
   lane:
     description: Lane ID in the base commit policy

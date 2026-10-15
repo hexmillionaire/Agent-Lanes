@@ -1,7 +1,7 @@
 {
   "name": "@hexmillionaire/agent-lanes",
   "version": "0.4.0",
-  "description": "Portable task scopes and handoffs for Claude Code, Codex, and human contributors.",
+  "description": "Offline CLI and GitHub Action that audit an AI coding agent's Git changes against a declared file scope, then print a handoff for the next agent.",
   "type": "module",
   "bin": {
     "agent-lanes": "bin/agent-lanes.mjs"
@@ -31,15 +31,27 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hexmillionaire/Agent-Lanes.git"
+    "url": "git+https://github.com/hexmillionaire/Agent-Lanes.git"
+  },
+  "homepage": "https://github.com/hexmillionaire/Agent-Lanes#readme",
+  "bugs": {
+    "url": "https://github.com/hexmillionaire/Agent-Lanes/issues"
   },
   "license": "MIT",
   "keywords": [
-    "codex",
     "claude-code",
+    "codex",
+    "ai-agents",
+    "coding-agent",
+    "agentic-coding",
     "git",
+    "scope",
+    "guardrails",
+    "handoff",
     "task-scope",
-    "handoff"
+    "pull-request",
+    "github-action",
+    "cli"
   ],
   "publishConfig": {
     "access": "public"

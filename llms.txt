@@ -1,0 +1,28 @@
+# Agent Lanes
+
+> Offline Node.js CLI (and GitHub Action) that records a coding task's allowed file scope, audits Git changes against it, and prints a Markdown handoff for the next agent. It is a path audit, not a sandbox: it does not block edits, run tests, or verify correctness.
+
+Requires Node.js 24.8+ and Git. No network access, telemetry, or API keys.
+
+## Install
+
+- `npm install -g @hexmillionaire/agent-lanes`
+- One-off: `npx --yes @hexmillionaire/agent-lanes --help`
+
+## Key commands
+
+- `agent-lanes start <id> --goal "Fix login" --allow "src/**" --allow "test/**" [--deny "src/secrets/**"]`: save a task and capture HEAD as its base
+- `agent-lanes check <id> [--json]`: audit changed paths; exit 0 within scope, 1 review required, 2 error
+- `agent-lanes note <id> --state working --summary "..." --next "..."`: record progress
+- `agent-lanes handoff <id>`: Markdown context packet for another agent
+- `agent-lanes check-pr <lane> --base <sha> --head <sha> --markdown`: audit a PR against `.agent-lanes-policy.json` from the base commit
+
+Every command accepts `--repo <path>`. Tasks live in `.agent-lanes/` (add it to `.gitignore`). Quote glob arguments. Patterns: `*`, `**`, `?`; deny wins; hidden paths must be allowed explicitly.
+
+## Docs
+
+- [README](https://github.com/hexmillionaire/Agent-Lanes#readme)
+- [Quickstart](https://github.com/hexmillionaire/Agent-Lanes/blob/main/docs/QUICKSTART.md)
+- [PR scope check and GitHub Action](https://github.com/hexmillionaire/Agent-Lanes/blob/main/docs/PR-CHECK.md)
+- [Coordination and templates](https://github.com/hexmillionaire/Agent-Lanes/blob/main/docs/COORDINATION.md)
+- [MCP server](https://github.com/hexmillionaire/agent-lanes-mcp) and [dashboard](https://github.com/hexmillionaire/agent-desk)

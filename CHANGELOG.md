@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Deny patterns now also match hidden files and directories (`secrets/**` denies `secrets/.key`). Previously a hidden file could pass the gate when an allow pattern named it. Allow patterns are unchanged. Companion tools pick this up when they re-vendor the core.
+- Handoffs keep task text containing a lone carriage return inside its quote block.
+- Add `llms.txt`, Action branding, and npm `homepage`/`bugs` metadata.
+
 ## 0.4.0
 
 - Coordinate CLI/server mutations across processes and enforce revision checks inside the writer lock.
