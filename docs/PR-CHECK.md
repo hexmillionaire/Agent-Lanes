@@ -32,6 +32,8 @@ Pin the action to a reviewed full commit SHA. Tags can move. Keep credentials ou
 
 To make a failing audit prevent merging, configure the job as a required check in branch rules. Review and protect the workflow and policy files (for example with CODEOWNERS and branch rules). The checker cannot stop a maintainer changing a policy or a PR changing its own workflow definition; a successful job alone is not a security boundary.
 
+GitHub runs the workflow file from the PR head, so a lane that allows `.github/workflows/**` lets the PR being checked rewrite the check itself (change `lane:`, swap `base:`, or delete the step) and still report green under the same job name. Deny `.github/workflows/**` and `action.yml` in every lane, as this repository's own policy does, and restrict who can change those paths with a ruleset or CODEOWNERS.
+
 ## Limits
 
 This audits net committed paths. It does not inspect source contents, run tests, infer authorship, inspect ignored working-tree files, or prove completion. Keep tests and code review as separate checks. PR audits include changes to `.agent-lanes/`; only local task audits exclude that storage directory.

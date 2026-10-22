@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Security: the dogfood policy denies `.github/workflows/**` and `action.yml` in every lane. A PR allowed to edit workflow files can rewrite the scope check that gates it, because GitHub runs the workflow definition from the PR head. `docs/PR-CHECK.md` explains the rule for downstream policies.
+- The scope workflow and the documented example pin the action to the 0.4.1 release commit instead of a 0.2.0 commit that predates the hidden-file deny fix.
+
 ## 0.4.1
 
 - Deny patterns now also match hidden files and directories (`secrets/**` denies `secrets/.key`). Previously a hidden file could pass the gate when an allow pattern named it. Allow patterns are unchanged. Companion tools pick this up when they re-vendor the core.

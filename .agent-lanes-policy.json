@@ -11,14 +11,15 @@
         "*.md",
         "package.json",
         "package-lock.json",
-        "action.yml",
         ".github/**",
         ".gitignore",
         "llms.txt"
       ],
       "deny": [
         ".agent-lanes-policy.json",
-        "LICENSE"
+        "LICENSE",
+        ".github/workflows/**",
+        "action.yml"
       ]
     },
     "docs": {
@@ -28,7 +29,9 @@
         "llms.txt"
       ],
       "deny": [
-        "SECURITY.md"
+        "SECURITY.md",
+        ".github/workflows/**",
+        "action.yml"
       ]
     }
   }
