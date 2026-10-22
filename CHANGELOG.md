@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Security: deny patterns are also evaluated against a case-folded, NFC-normalised copy of the path, so `src/Secrets/key.pem` or an NFD spelling can no longer slip past `deny: src/secrets/**` and overwrite the denied file on a case-insensitive checkout. Allow patterns stay byte-exact.
+- Security: local audits list untracked files with the user's global Git excludes file disabled, and report entries hidden by repository ignore rules in a new `ignored` field (and a handoff line) instead of silently dropping them. An agent that appends `*` to an allowed `.gitignore` can no longer hide new files from `check`.
+- Security: the PR check reads the diff with `--raw` and fails closed on symbolic links (mode `120000`) the way it already did for submodules, reporting them in a new `symlinks` field. A docs-lane PR could previously add `docs/x -> ../.agent-lanes-policy.json` and pass. `parseRawDiff` is now exported from the core.
 - Security: the dogfood policy denies `.github/workflows/**` and `action.yml` in every lane. A PR allowed to edit workflow files can rewrite the scope check that gates it, because GitHub runs the workflow definition from the PR head. `docs/PR-CHECK.md` explains the rule for downstream policies.
 - The scope workflow and the documented example pin the action to the 0.4.1 release commit instead of a 0.2.0 commit that predates the hidden-file deny fix.
 
