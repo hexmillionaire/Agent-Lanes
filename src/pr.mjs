@@ -1,4 +1,4 @@
-import { git, classify, validateId, validatePattern } from './core.mjs';
+import { git, classify, parseRawDiff, validateId, validatePattern } from './core.mjs';
 
 export const POLICY_PATH = '.agent-lanes-policy.json';
 const SHA = /^[a-f0-9]{40}([a-f0-9]{24})?$/;
@@ -43,19 +43,18 @@ export async function checkPullRequest(root, { lane, base, head }) {
   if (mergeBases.length !== 1 || !SHA.test(mergeBases[0])) throw new Error('PR needs one unambiguous merge base; fetch full history.');
   const mergeBase = mergeBases[0];
   const [diff, baseTree, headTree] = await Promise.all([
-    git(root, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--name-status', '-z', mergeBase, head, '--']),
+    git(root, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--ignore-submodules=none', '--raw', '--no-abbrev', '-z', mergeBase, head, '--']),
     git(root, ['ls-tree', '-r', '-z', base]),
     git(root, ['ls-tree', '-r', '-z', head]),
   ]);
-  const tokens = diff.split('\0');
-  if (tokens.at(-1) === '') tokens.pop();
-  if (tokens.length % 2) throw new Error('Unexpected Git name-status output.');
-  const changes = [];
-  for (let i = 0; i < tokens.length; i += 2) changes.push({ status: tokens[i], path: tokens[i + 1], ...classify(tokens[i + 1], policy.lanes[lane]) });
-  changes.sort((a, b) => a.path.localeCompare(b.path));
-  const submodules = [...new Set([baseTree, headTree].flatMap(tree => tree.split('\0').filter(line => line.startsWith('160000 ')).map(line => line.slice(line.indexOf('\t') + 1))))];
+  const raw = parseRawDiff(diff);
+  const changes = raw.map(file => ({ status: file.status, path: file.path, ...classify(file.path, policy.lanes[lane]) })).sort((a, b) => a.path.localeCompare(b.path));
+  const treeSubmodules = [baseTree, headTree].flatMap(tree => tree.split('\0').filter(line => line.startsWith('160000 ')).map(line => line.slice(line.indexOf('\t') + 1)));
+  const submodules = [...new Set([...treeSubmodules, ...raw.filter(file => file.submodule).map(file => file.path)])].sort();
+  // A symbolic link is a path audit's blind spot: its target can be anywhere.
+  const symlinks = raw.filter(file => file.symlink).map(file => file.path).sort();
   const counts = Object.fromEntries(['allowed', 'outside', 'denied'].map(verdict => [verdict, changes.filter(file => file.verdict === verdict).length]));
-  return { version: 1, lane, base, head, mergeBase, policyCommit: base, policyChanged: changes.some(file => file.path === POLICY_PATH), changes, counts, submodules, ok: !changes.some(file => file.verdict !== 'allowed') && !submodules.length };
+  return { version: 1, lane, base, head, mergeBase, policyCommit: base, policyChanged: changes.some(file => file.path === POLICY_PATH), changes, counts, submodules, symlinks, ok: !changes.some(file => file.verdict !== 'allowed') && !submodules.length && !symlinks.length };
 }
 
 export function prSummary(report) {
@@ -66,7 +65,8 @@ export function prSummary(report) {
     `${report.counts.allowed} allowed; ${report.counts.outside} outside; ${report.counts.denied} denied.`, '',
     ...report.changes.map(file => `- **${file.verdict.toUpperCase()}** ${file.status} ${code(file.path)}`),
     ...(report.policyChanged ? ['', 'Policy changed in this PR. The check used the base policy; review policy changes for future PRs.'] : []),
-    ...(report.submodules.length ? ['', 'Submodules require a separate audit; the check fails closed.'] : []), '',
+    ...(report.submodules.length ? ['', 'Submodules require a separate audit; the check fails closed.'] : []),
+    ...(report.symlinks?.length ? ['', `Symbolic links changed (${report.symlinks.map(code).join(', ')}); their targets are not path-audited, so the check fails closed.`] : []), '',
     'This checks net committed paths from the merge base to the PR head. It does not run tests or verify correctness.', '',
   ].join('\n');
 }

@@ -250,6 +250,21 @@ test('deny patterns cover hidden files and directories that an explicit allow na
   assert.equal(classify('src/.env', { allow: ['src/**'], deny: [] }).verdict, 'outside');
 });
 
+test('deny patterns fail closed on case and Unicode normalisation differences', () => {
+  // macOS and Windows checkouts open these spellings as the denied path.
+  const task = { allow: ['src/**', '*.md'], deny: ['src/secrets/**', 'SECURITY.md', 'src/caf\u00e9/**', 'src/*.PEM'] };
+  assert.equal(classify('src/Secrets/key.pem', task).verdict, 'denied');
+  assert.equal(classify('SRC/SECRETS/KEY.PEM', task).verdict, 'denied');
+  assert.equal(classify('security.md', task).verdict, 'denied');
+  assert.equal(classify('src/cafe\u0301/menu.txt', task).verdict, 'denied');
+  assert.equal(classify('src/key.pem', task).verdict, 'denied');
+  assert.equal(classify('src/Secrets/.hidden', task).verdict, 'denied');
+  assert.equal(classify('src/secrets.md', task).verdict, 'allowed');
+  // Allow patterns stay byte-exact, so a differently spelled path is outside, never allowed.
+  assert.equal(classify('SRC/app.js', { allow: ['src/**'], deny: [] }).verdict, 'outside');
+  assert.equal(classify('src/app.js', { allow: ['SRC/**'], deny: [] }).verdict, 'outside');
+});
+
 test('handoff keeps carriage-return text inside its quote block', () => {
   const task = { version: 1, id: 'cr', goal: 'Fix\r## Injected heading\r\nnext', allow: ['src/**'], deny: [], agent: 'a', base: 'a'.repeat(40), state: 'working', summary: 'one\rtwo', next: '', createdAt: 'x', updatedAt: 'x' };
   const packet = handoff({ task, branch: 'main', head: 'b'.repeat(40), changes: [], conflicts: [], submodules: [], ok: true });
@@ -307,7 +322,36 @@ test('ignored files and task storage are excluded', async t => {
   const { root, task } = await fixture(t);
   await mkdir(path.join(root, 'ignored'));
   await writeFile(path.join(root, 'ignored', 'secret'), 'fixture\n');
-  assert.deepEqual((await checkTask(root, task)).changes, []);
+  const report = await checkTask(root, task);
+  assert.deepEqual(report.changes, []);
+  assert.equal(report.ok, true);
+  // Ignored entries are reported rather than hidden; task storage never is.
+  assert.deepEqual(report.ignored, ['ignored/']);
+  assert.match(handoff(report), /Ignored by repository rules, not audited: "ignored\/"/);
+});
+
+test('repository ignore rules cannot hide new files from the report', async t => {
+  const { root, task } = await fixture(t);
+  await writeFile(path.join(root, '.gitignore'), '.agent-lanes/\nignored/\n*\n');
+  await writeFile(path.join(root, 'src', 'secret.env'), 'fixture\n');
+  const report = await checkTask(root, task);
+  assert.equal(report.changes.find(file => file.path === '.gitignore').verdict, 'outside');
+  assert.deepEqual(report.ignored, ['src/secret.env']);
+});
+
+test('a global excludes file does not apply to the audit', async t => {
+  const { root, task } = await fixture(t);
+  const config = await mkdtemp(path.join(os.tmpdir(), 'agent-lanes-xdg-'));
+  t.after(() => removeFixture(config, 'agent-lanes-xdg-'));
+  await mkdir(path.join(config, 'git'));
+  await writeFile(path.join(config, 'git', 'ignore'), '*.env\n');
+  const previous = process.env.XDG_CONFIG_HOME;
+  process.env.XDG_CONFIG_HOME = config;
+  t.after(() => { if (previous === undefined) delete process.env.XDG_CONFIG_HOME; else process.env.XDG_CONFIG_HOME = previous; });
+  await writeFile(path.join(root, 'src', 'secret.env'), 'fixture\n');
+  const report = await checkTask(root, task);
+  assert.equal(report.changes.find(file => file.path === 'src/secret.env').verdict, 'denied');
+  assert.deepEqual(report.ignored, []);
 });
 
 test('duplicate tasks are refused; notes cannot silently widen scope', async t => {

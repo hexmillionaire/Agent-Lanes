@@ -83,6 +83,26 @@ test('rejects missing policies, bad refs, symlink policies and invalid policy sh
   for (const invalid of [{}, { version: 1, lanes: {} }, { version: 1, lanes: { fix: { allow: ['../**'], deny: [] } } }]) assert.throws(() => validatePolicy(invalid));
 });
 
+test('symbolic links fail closed even when paths are allowed', async t => {
+  const { root, git, base } = await fixture(t);
+  const blob = execFileSync('git', ['-C', root, 'hash-object', '-w', '--stdin'], { encoding: 'utf8', windowsHide: true, input: '../.agent-lanes-policy.json' }).trim();
+  // A Git tree symlink can be tested without OS symlink privileges.
+  git('update-index', '--add', '--cacheinfo', `120000,${blob},src/link`);
+  git('commit', '-qm', 'Symlink into an allowed path');
+  const report = await checkPullRequest(root, { lane: 'fix', base, head: git('rev-parse', 'HEAD') });
+  assert.deepEqual(report.symlinks, ['src/link']);
+  assert.equal(report.changes.find(file => file.path === 'src/link').verdict, 'allowed');
+  assert.equal(report.ok, false);
+  assert.match(prSummary(report), /Symbolic links changed \(`"src\/link"`\)/);
+  // The net diff from the merge base decides: a symlink that the PR itself replaced with a regular file is not flagged.
+  git('rm', '-q', '--cached', 'src/link');
+  await writeFile(path.join(root, 'src/link'), 'plain file\n');
+  git('add', 'src/link'); git('commit', '-qm', 'Regular file');
+  const replaced = await checkPullRequest(root, { lane: 'fix', base, head: git('rev-parse', 'HEAD') });
+  assert.deepEqual(replaced.symlinks, []);
+  assert.equal(replaced.ok, true);
+});
+
 test('submodules fail closed even when paths are allowed', async t => {
   const { root, git, base } = await fixture(t);
   git('update-index', '--add', '--cacheinfo', `160000,${base},src/module`);
