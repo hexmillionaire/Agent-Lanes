@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.4.2 — 2026-10-28
+
+- Bound task-file reads through an identity-checked descriptor, reject malformed UTF-8 and detect observed file changes during a read.
+- Escape terminal controls in human CLI output and diagnostics while preserving original authored values in machine-readable JSON.
+- Validate current patched Node 24 and Node 26 LTS while retaining the Node 24.8 functional minimum.
 - Security: deny patterns are also evaluated against a case-folded, NFC-normalised copy of the path, so `src/Secrets/key.pem` or an NFD spelling can no longer slip past `deny: src/secrets/**` and overwrite the denied file on a case-insensitive checkout. Allow patterns stay byte-exact.
 - Security: local audits list untracked files with the user's global Git excludes file disabled, and report entries hidden by repository ignore rules in a new `ignored` field (and a handoff line) instead of silently dropping them. An agent that appends `*` to an allowed `.gitignore` can no longer hide new files from `check`.
 - Security: the PR check reads the diff with `--raw` and fails closed on symbolic links (mode `120000`) the way it already did for submodules, reporting them in a new `symlinks` field. A docs-lane PR could previously add `docs/x -> ../.agent-lanes-policy.json` and pass. `parseRawDiff` is now exported from the core.

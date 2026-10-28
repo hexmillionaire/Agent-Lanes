@@ -13,17 +13,17 @@ OUTSIDE  ? "config.json"
 
 ## Install the current release
 
-Requires Node.js 24.8+ and Git. [Version 0.4.1 is on npm](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), published October 15, 2026.
+Requires Node.js 24.8+ and Git. [Version 0.4.2](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), published October 15, 2026.
 
 ```sh
-npm install -g @hexmillionaire/agent-lanes@0.4.1
+npm install -g @hexmillionaire/agent-lanes@0.4.2
 agent-lanes --help
 ```
 
-For a single command, use `npx --yes @hexmillionaire/agent-lanes@0.4.1 --help`. The versioned GitHub release archive remains an alternative:
+For a single command, use `npx --yes @hexmillionaire/agent-lanes@0.4.2 --help`. The versioned GitHub release archive remains an alternative:
 
 ```sh
-npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.4.1/hexmillionaire-agent-lanes-0.4.1.tgz
+npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.4.2/hexmillionaire-agent-lanes-0.4.2.tgz
 ```
 
 The [connected quickstart](docs/QUICKSTART.md) walks through a task using Agent Lanes, Agent Desk, and Agent Lanes MCP. No model API key is needed.
@@ -91,7 +91,9 @@ Start with the [connected quickstart](docs/QUICKSTART.md) to use all three tools
 
 ## Performance and reliability review
 
-See the [October 2026 investigation](https://github.com/hexmillionaire/Agent-Lanes/blob/main/docs/INVESTIGATION.md) for measured results, language/runtime decisions, limitations, and the next improvements. Use the latest Node 24 LTS patch; Node 24.8 is the tested minimum.
+See the [October 2026 investigation](https://github.com/hexmillionaire/Agent-Lanes/blob/main/docs/INVESTIGATION.md) for measured results, language/runtime decisions, limitations, and the next improvements. Use the latest patched Node 26 LTS for a new installation, or patched Node 24 Maintenance LTS; Node 24.8 remains the minimum. See the [Node release schedule](https://github.com/nodejs/Release#release-schedule).
+
+Task reads are bounded to 64 KiB and reject invalid UTF-8 instead of silently changing saved text. Human-readable task lists quote authored text; CLI output escapes terminal control characters, and JSON output preserves their decoded values.
 
 Task creation and writer coordination require a filesystem with hard-link support (such as NTFS, APFS, or ext4). Atomic file replacement prevents partial JSON reads. In 0.4.0, cooperating writers serialize mutations and merge updates against the latest saved fields; use revision checks to reject stale edits. Manual file changes and older writers do not participate in this coordination.
 

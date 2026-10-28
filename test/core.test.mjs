@@ -406,6 +406,70 @@ test('invalid task JSON fails with error rather than a reassuring result', async
   await assert.rejects(readTask(root, 'login'), /Unsupported task format/);
 });
 
+test('invalid UTF-8 task data is rejected without silently changing saved notes', async t => {
+  const { root, task } = await fixture(t);
+  const bytes = Buffer.from(JSON.stringify(task));
+  bytes[bytes.indexOf('Fix login')] = 0xff;
+  await writeFile(path.join(root, '.agent-lanes', 'login.json'), bytes);
+  await assert.rejects(readTask(root, 'login'), /valid UTF-8 JSON/);
+  await assert.rejects(listTasks(root), /valid UTF-8 JSON/);
+  await assert.rejects(updateTask(root, 'login', { summary: 'Must not rewrite corrupted text' }), /valid UTF-8 JSON/);
+  assert.deepEqual(await fsPromises.readFile(path.join(root, '.agent-lanes', 'login.json')), bytes);
+});
+
+test('task growth after descriptor stat reads at most the 64 KiB limit plus one byte', async t => {
+  const { root } = await fixture(t);
+  const filename = path.join(root, '.agent-lanes', 'login.json');
+  const original = fsPromises.open;
+  let reads = 0;
+  let bytesRead = 0;
+  fsPromises.open = async (file, ...args) => {
+    const handle = await original(file, ...args);
+    if (file !== filename) return handle;
+    let first = true;
+    return {
+      stat: async () => {
+        const stat = await handle.stat();
+        if (first) { first = false; await writeFile(filename, 'x'.repeat(1024 * 1024)); }
+        return stat;
+      },
+      read: async (buffer, offset, length, position) => {
+        reads++;
+        assert.ok(buffer.length <= 65537 && length <= 65537, 'The read allocation must remain bounded.');
+        const result = await handle.read(buffer, offset, length, position);
+        bytesRead += result.bytesRead;
+        return result;
+      },
+      close: () => handle.close(),
+    };
+  };
+  syncBuiltinESMExports();
+  try {
+    await assert.rejects(readTask(root, 'login'), /64 KiB/);
+    assert.ok(reads > 0);
+    assert.equal(bytesRead, 65537);
+  } finally { fsPromises.open = original; syncBuiltinESMExports(); }
+});
+
+test('CLI escapes saved terminal controls while JSON retains the exact authored text', async t => {
+  const { root, task } = await fixture(t);
+  const goal = 'Review\rFAKE\t\u009b2J';
+  const agent = 'agent\u009dprivate';
+  await writeFile(path.join(root, '.agent-lanes', 'login.json'), JSON.stringify({ ...task, goal, agent }));
+  for (const args of [['list'], ['handoff', 'login'], ['check', 'login', '--json']]) {
+    const result = spawnSync(process.execPath, [cli, ...args, '--repo', root], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.doesNotMatch(result.stdout, /[\r\x7f-\x9f]/);
+    assert.match(result.stdout, /\\u009b2J/);
+    if (args[0] === 'list') { assert.equal(result.stdout.trimEnd().split('\n').length, 1); assert.match(result.stdout, /\\rFAKE\\t/); }
+    if (args[0] === 'check') { const report = JSON.parse(result.stdout); assert.equal(report.task.goal, goal); assert.equal(report.task.agent, agent); }
+  }
+  const invalid = spawnSync(process.execPath, [cli, 'bad\u009b2J'], { encoding: 'utf8' });
+  assert.equal(invalid.status, 2);
+  assert.doesNotMatch(invalid.stderr, /[\x7f-\x9f]/);
+  assert.match(invalid.stderr, /\\u009b2J/);
+});
+
 test('CLI returns distinct scope and input errors, with clean JSON output', async t => {
   const { root } = await fixture(t);
   let result = spawnSync(process.execPath, [cli, 'check', 'login', '--repo', root, '--json'], { encoding: 'utf8' });

@@ -1,10 +1,10 @@
 # One task across all three tools
 
-Requires Node 24.8+ and Git. No model API key is needed. Use a trusted Git repository with at least one commit, and a separate worktree for concurrent tasks.
+Requires Node 24.8+ and Git. Prefer the latest patched Node 26 LTS for new installations, or patched Node 24 Maintenance LTS. No model API key is needed. Use a trusted Git repository with at least one commit, and a separate worktree for concurrent tasks.
 
 ## Install
 
-Version 0.4.0 of [Agent Lanes](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), [Agent Desk](https://www.npmjs.com/package/@hexmillionaire/agent-desk), and [Agent Lanes MCP](https://www.npmjs.com/package/@hexmillionaire/agent-lanes-mcp) was published on npm on October 11, 2026. Install the pinned packages together:
+Version 0.4.0 of [Agent Lanes](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), [Agent Desk](https://www.npmjs.com/package/@hexmillionaire/agent-desk), and [Agent Lanes MCP](https://www.npmjs.com/package/@hexmillionaire/agent-lanes-mcp) provides the pinned packages below:
 
 ```sh
 npm install -g @hexmillionaire/agent-lanes@0.4.0 @hexmillionaire/agent-desk@0.4.0 @hexmillionaire/agent-lanes-mcp@0.4.0

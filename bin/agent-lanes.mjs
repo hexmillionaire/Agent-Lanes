@@ -3,6 +3,11 @@ import { parseArgs } from 'node:util';
 import { repoRoot, startTask, updateTask, readTask, listTasks, readTemplates, writerLockStatus, checkTask, handoff, VERSION } from '../src/core.mjs';
 import { checkPullRequest, prSummary } from '../src/pr.mjs';
 
+// Preserve intentional output lines/tabs, but never let saved text or Git errors
+// send carriage returns, C1 controls, or other terminal commands to the display.
+const terminalSafe = value => String(value).replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, character => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
+const print = value => console.log(terminalSafe(value));
+
 const usage = `Agent Lanes ${VERSION} — portable task scope checks\n\nUsage:\n  agent-lanes start <id> --goal "Fix login" --allow "src/**" --allow "test/**"\n  agent-lanes start <id> --goal "Fix login" --template <template-id>\n  agent-lanes note <id> --state working --agent codex --next "Add regression test" [--if-updated-at <timestamp>]\n  agent-lanes check <id> [--json]\n  agent-lanes check-pr <lane> --base <full-sha> --head <full-sha> [--json|--markdown]\n  agent-lanes handoff <id>\n  agent-lanes list [--json]\n  agent-lanes templates [--json]\n  agent-lanes lock-status [--json]\n\nOptions: --repo <path>, --base <ref> (start), --deny <glob> (repeatable)\nPR policy: .agent-lanes-policy.json from the trusted base commit.\nExit codes: 0 success; 1 scope violation/conflict/submodule; 2 invalid input/error.\nScope audits read Git metadata; they do not run tests or block edits.\n`;
 
 try {
@@ -13,8 +18,8 @@ try {
     template: { type: 'string' },
     summary: { type: 'string' }, next: { type: 'string' }, head: { type: 'string' }, markdown: { type: 'boolean' }, json: { type: 'boolean' }, help: { type: 'boolean' }, version: { type: 'boolean' },
   } });
-  if (values.version) console.log(VERSION);
-  else if (values.help || !positionals.length) console.log(usage);
+  if (values.version) print(VERSION);
+  else if (values.help || !positionals.length) print(usage);
   else {
     const [command, id] = positionals;
     if (positionals.length > (['list', 'templates', 'lock-status'].includes(command) ? 1 : 2)) throw new Error('Too many positional arguments.');
@@ -25,7 +30,7 @@ try {
     if (command === 'check-pr') {
       if (values.json && values.markdown) throw new Error('Use --json or --markdown, not both.');
       const report = await checkPullRequest(root, { lane: id, base: values.base, head: values.head });
-      console.log(values.json ? JSON.stringify(report, null, 2) : prSummary(report));
+      print(values.json ? JSON.stringify(report, null, 2) : prSummary(report));
       if (!report.ok) process.exitCode = 1;
     } else if (command === 'start') {
       let allow = values.allow; let deny = values.deny;
@@ -36,31 +41,31 @@ try {
         ({ allow, deny } = template);
       }
       const task = await startTask(root, { id, goal: values.goal, allow, deny, agent: values.agent, base: values.base });
-      console.log(values.json ? JSON.stringify(task, null, 2) : `Started ${task.id} at ${task.base.slice(0, 12)}. Add .agent-lanes/ to your .gitignore.`);
+      print(values.json ? JSON.stringify(task, null, 2) : `Started ${task.id} at ${task.base.slice(0, 12)}. Add .agent-lanes/ to your .gitignore.`);
     } else if (command === 'note') {
       const updates = Object.fromEntries(['state', 'agent', 'summary', 'next'].filter(key => key in values).map(key => [key, values[key]]));
       if (!Object.keys(updates).length) throw new Error('Provide at least one note field.');
       const task = await updateTask(root, id, updates, { expectedUpdatedAt: values['if-updated-at'] });
-      console.log(values.json ? JSON.stringify(task, null, 2) : `Updated ${task.id}: ${task.state}.`);
+      print(values.json ? JSON.stringify(task, null, 2) : `Updated ${task.id}: ${task.state}.`);
     } else if (command === 'templates') {
       const document = await readTemplates(root);
-      console.log(values.json ? JSON.stringify(document, null, 2) : document.templates.map(template => `${template.id}\t${template.name}\t${template.description}`).join('\n') || 'No templates. Add .agent-lanes-templates.json to the repository.');
+      print(values.json ? JSON.stringify(document, null, 2) : document.templates.map(template => `${template.id}\t${JSON.stringify(template.name)}\t${JSON.stringify(template.description)}`).join('\n') || 'No templates. Add .agent-lanes-templates.json to the repository.');
     } else if (command === 'lock-status') {
       const status = await writerLockStatus(root);
-      console.log(values.json ? JSON.stringify(status, null, 2) : status.locked ? `Writer lock present: ${status.owner ? `PID ${status.owner.pid} on ${status.owner.hostname}; token ${status.owner.token}` : 'owner metadata unavailable'}. Stop all writers before manually removing .agent-lanes/.write.lock after a crash.` : 'No writer lock present.');
+      print(values.json ? JSON.stringify(status, null, 2) : status.locked ? `Writer lock present: ${status.owner ? `PID ${status.owner.pid} on ${status.owner.hostname}; token ${status.owner.token}` : 'owner metadata unavailable'}. Stop all writers before manually removing .agent-lanes/.write.lock after a crash.` : 'No writer lock present.');
     } else if (command === 'list') {
       const tasks = await listTasks(root);
-      console.log(values.json ? JSON.stringify(tasks, null, 2) : tasks.map(task => `${task.id}\t${task.state}\t${task.goal.replaceAll('\n', ' ')}`).join('\n') || 'No tasks. Use agent-lanes start.');
+      print(values.json ? JSON.stringify(tasks, null, 2) : tasks.map(task => `${task.id}\t${task.state}\t${JSON.stringify(task.goal)}`).join('\n') || 'No tasks. Use agent-lanes start.');
     } else {
       const report = await checkTask(root, await readTask(root, id));
-      if (command === 'handoff') console.log(handoff(report));
+      if (command === 'handoff') print(handoff(report));
       else {
-        console.log(values.json ? JSON.stringify(report, null, 2) : `${report.ok ? 'WITHIN SCOPE' : 'REVIEW REQUIRED'}: ${id}\n${report.changes.map(file => `${file.verdict.toUpperCase().padEnd(8)} ${file.status} ${JSON.stringify(file.path)}`).join('\n')}\n${report.conflicts.length} conflict(s), ${report.submodules.length} submodule(s). Tests not verified.`);
+        print(values.json ? JSON.stringify(report, null, 2) : `${report.ok ? 'WITHIN SCOPE' : 'REVIEW REQUIRED'}: ${id}\n${report.changes.map(file => `${file.verdict.toUpperCase().padEnd(8)} ${file.status} ${JSON.stringify(file.path)}`).join('\n')}\n${report.conflicts.length} conflict(s), ${report.submodules.length} submodule(s). Tests not verified.`);
         if (!report.ok) process.exitCode = 1;
       }
     }
   }
 } catch (error) {
-  console.error(`Agent Lanes: ${error.message}`);
+  console.error(terminalSafe(`Agent Lanes: ${error.message}`));
   process.exitCode = 2;
 }
