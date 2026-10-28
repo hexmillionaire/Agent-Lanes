@@ -4,18 +4,18 @@ Requires Node 24.8+ and Git. Prefer the latest patched Node 26 LTS for new insta
 
 ## Install
 
-Version 0.4.0 of [Agent Lanes](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), [Agent Desk](https://www.npmjs.com/package/@hexmillionaire/agent-desk), and [Agent Lanes MCP](https://www.npmjs.com/package/@hexmillionaire/agent-lanes-mcp) provides the pinned packages below:
+Version 0.4.2 of [Agent Lanes](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), [Agent Desk](https://www.npmjs.com/package/@hexmillionaire/agent-desk), and [Agent Lanes MCP](https://www.npmjs.com/package/@hexmillionaire/agent-lanes-mcp) provides the pinned packages below:
 
 ```sh
-npm install -g @hexmillionaire/agent-lanes@0.4.0 @hexmillionaire/agent-desk@0.4.0 @hexmillionaire/agent-lanes-mcp@0.4.0
+npm install -g @hexmillionaire/agent-lanes@0.4.2 @hexmillionaire/agent-desk@0.4.2 @hexmillionaire/agent-lanes-mcp@0.4.2
 ```
 
-You can install each package separately or try a command with `npx`, such as `npx --yes @hexmillionaire/agent-desk@0.4.0 --demo`. Package installation does not configure Claude or Codex automatically.
+You can install each package separately or try a command with `npx`, such as `npx --yes @hexmillionaire/agent-desk@0.4.2 --demo`. Package installation does not configure Claude or Codex automatically.
 
 The independently packaged, versioned GitHub release archives remain a fallback:
 
 ```sh
-npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.4.0/hexmillionaire-agent-lanes-0.4.0.tgz https://github.com/hexmillionaire/agent-desk/releases/download/v0.4.0/hexmillionaire-agent-desk-0.4.0.tgz https://github.com/hexmillionaire/agent-lanes-mcp/releases/download/v0.4.0/hexmillionaire-agent-lanes-mcp-0.4.0.tgz
+npm install -g https://github.com/hexmillionaire/Agent-Lanes/releases/download/v0.4.2/hexmillionaire-agent-lanes-0.4.2.tgz https://github.com/hexmillionaire/agent-desk/releases/download/v0.4.2/hexmillionaire-agent-desk-0.4.2.tgz https://github.com/hexmillionaire/agent-lanes-mcp/releases/download/v0.4.2/hexmillionaire-agent-lanes-mcp-0.4.2.tgz
 ```
 
 ## Create a task

@@ -13,7 +13,7 @@ OUTSIDE  ? "config.json"
 
 ## Install the current release
 
-Requires Node.js 24.8+ and Git. [Version 0.4.2](https://www.npmjs.com/package/@hexmillionaire/agent-lanes), published October 15, 2026.
+Requires Node.js 24.8+ and Git. [Version 0.4.2](https://www.npmjs.com/package/@hexmillionaire/agent-lanes).
 
 ```sh
 npm install -g @hexmillionaire/agent-lanes@0.4.2
@@ -102,3 +102,5 @@ Task creation and writer coordination require a filesystem with hard-link suppor
 Version 0.4.0 adds revision-checked writes across processes, bounded writer coordination, read-only lock diagnostics, and strictly data-only reusable scope templates. See [coordination and templates](docs/COORDINATION.md). Upgrade all writers together; 0.3 clients and manual edits do not participate in the protocol. A crashed lock needs explicit recovery after writers stop.
 
 See the [dated community-tools investigation](docs/COMMUNITY-TOOLS.md) for evidence, alternatives and focused contribution opportunities. Try [Repo Fixtures](https://github.com/hexmillionaire/repo-fixtures) for fictional Git reproductions and [MCP Surface](https://github.com/hexmillionaire/mcp-surface) for offline interface checks.
+
+[Worktree Stamp](https://github.com/hexmillionaire/worktree-stamp) checks included Git content freshness, including dirty-to-dirty edits and index changes. A matching stamp does not verify test results. See the [October 28 review](docs/REVIEW-2026-10-28.md) for current fixes, explicit developer requests and focused follow-up ideas.
