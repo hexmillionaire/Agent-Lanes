@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Releases publish from `.github/workflows/publish.yml` on a version tag, using npm trusted publishing (OIDC, no stored token) with a provenance attestation.
+
 ## 0.4.2 — 2026-10-28
 
 - Bound task-file reads through an identity-checked descriptor, reject malformed UTF-8 and detect observed file changes during a read.
